@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Center For Natural Resources - Camera Monitor Dashboard</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e5e7eb;
+
+      --blue: #2563eb;
+      --blue-2: #1d4ed8;
+
+      --green: #16a34a;
+      --red: #dc2626;
+
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    /* ✅ watermark background (visible, behind content) */
+    body{
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 600px at 20% 0%, #eaf2ff, transparent 60%),
+                  radial-gradient(1000px 600px at 90% 20%, #eefbf3, transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      padding: 22px 16px 40px;
+      position: relative;
+    }
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: url("CNR_Logo.png") center / min(900px, 70vw) no-repeat;
+      opacity: 0.12; /* tweak 0.10–0.18 */
+      pointer-events: none;
+      z-index: 0;
+      filter: grayscale(15%) saturate(0.9);
+    }
+    .container{
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+      position: relative;
+      z-index: 1; /* ensure content is above watermark */
+    }
+
+    /* Header */
+    .topbar{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand{ display: flex; align-items: center; gap: 16px; min-width: 0; }
+
+    /* ✅ logo becomes image */
+    .logo{
+      width: 72px; height: 72px; border-radius: 16px;
+      display: grid; place-items: center;
+      background: #fff;
+      border: 1px solid rgba(15,23,42,0.08);
+      box-shadow: 0 10px 25px rgba(15,23,42,0.10);
+      flex: 0 0 auto;
+      overflow: hidden;
+      padding: 4px;
+    }
+    .logo img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand h1{
+      margin: 0; font-size: 24px; letter-spacing: 0.2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ✅ header subtitle */
+    .brand-subtitle{
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .actions{ display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+
+    /* Inputs */
+    .search-wrap{ position: relative; width: min(520px, 100%); }
+    #search{
+      width: 100%;
+      padding: 11px 12px 11px 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fbfdff;
+      outline: none;
+      transition: 140ms ease;
+      font-size: 14px;
+    }
+    #search:focus{
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+    .search-icon{
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.55; pointer-events: none;
+    }
+
+    /* Buttons */
+    button{
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: 140ms ease;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+      white-space: nowrap;
+    }
+    button:hover{ transform: translateY(-1px); box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08); }
+    .primary{ background: var(--blue); border-color: rgba(37, 99, 235, 0.35); color: white; }
+    .primary:hover{ background: var(--blue-2); }
+    .ghost{ background: #f8fafc; }
+
+    /* Dropdown */
+    .select{
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: 140ms ease;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+      outline: none;
+      white-space: nowrap;
+    }
+    .select:focus{
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    /* Map header controls: keep dropdown + Fit NJ on one line */
+    .map-controls{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .map-controls .select{
+      flex: 1 1 220px;
+      min-width: 180px;
+      max-width: 320px;
+    }
+    .fit-btn{
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    /* Table header controls (Search + Order) */
+    .table-controls{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+    @media (max-width: 560px){
+      .table-controls{
+        flex-wrap: wrap;
+        white-space: normal;
+      }
+    }
+    .table-controls .select{
+      min-width: 220px;
+      max-width: 280px;
+      flex: 0 0 auto;
+    }
+    .table-controls .search-wrap{
+      max-width: 340px;
+      flex: 1 1 340px;
+    }
+
+    /* ensure map header left text can shrink */
+    .map-header-left{
+      min-width: 0;
+      overflow: hidden;
+    }
+    .map-header-left h2,
+    .map-header-left .sub{
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Stats row */
+    .stats{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 980px){ .stats{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px){ .stats{ grid-template-columns: 1fr; } }
+    .stat{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat .label{ color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .stat .value{ font-size: 22px; font-weight: 900; letter-spacing: 0.2px; margin: 0; }
+    .pill{
+      width: 34px; height: 34px; border-radius: 999px;
+      display: grid; place-items: center;
+      font-weight: 900; color: white;
+    }
+    .pill.green{ background: rgba(22,163,74,0.9); }
+    .pill.red{ background: rgba(220,38,38,0.9); }
+    .pill.blue{ background: rgba(37,99,235,0.9); }
+    .pill.gray{ background: rgba(100,116,139,0.9); }
+
+    /* Grid main */
+    .grid{ display: grid; grid-template-columns: 1.05fr 1.25fr; gap: 12px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 560px;
+    }
+    #mapCard{
+      align-self: start;
+    }
+    .card-header{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card-header h2{ margin: 0; font-size: 14px; letter-spacing: 0.2px; }
+    .card-header .sub{ margin-top: 2px; font-size: 12px; color: var(--muted); }
+    .card-body{ padding: 12px 14px 14px; flex: 1; }
+
+    /* Table */
+    table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    thead th{
+      text-align: left;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody td{
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      font-size: 13px;
+    }
+    tbody tr:hover{ background: #f8fafc; }
+    tbody tr:last-child td{ border-bottom: none; }
+    .name{ font-weight: 900; }
+    .city{ color: var(--muted); font-weight: 700; }
+
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+    .badge::before{
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .online{ color: var(--green); }
+    .online::before{ background: var(--green); }
+    .offline{ color: var(--red); }
+    .offline::before{ background: var(--red); }
+
+    .view-btn{
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(37,99,235,0.25);
+      background: rgba(37,99,235,0.06);
+      color: var(--blue);
+      font-weight: 900;
+      box-shadow: none;
+      white-space: nowrap;
+    }
+    .view-btn:hover{ background: rgba(37,99,235,0.10); transform: translateY(-1px); }
+
+    /* Map */
+    #map{
+      width: 100%;
+      height: 100%;
+      min-height: 510px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* GIF Modal */
+    .gif-modal{ position: fixed; inset: 0; display: none; z-index: 9999; }
+    .gif-modal.is-open{ display:block; }
+    .gif-modal__backdrop{ position:absolute; inset:0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); }
+    .gif-modal__card{ position:relative; width: min(980px, calc(100% - 28px)); margin: 26px auto; background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 22px 70px rgba(15,23,42,0.22); overflow:hidden; }
+    .gif-modal__head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .gif-modal__titles{ min-width:0; }
+    .gif-modal__title{ font-weight: 900; font-size: 14px; color: var(--text); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .gif-modal__meta{ margin-top: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .gif-modal__close{ border: 1px solid var(--border); background:#fff; border-radius: 10px; padding: 8px 10px; cursor:pointer; font-weight: 900; }
+    .gif-modal__close:hover{ transform: translateY(-1px); }
+    .gif-modal__body{ padding: 12px 14px 14px; }
+    .gif-modal__body img{ width:100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 12px 28px rgba(15,23,42,0.12); background:#fff; }
+
+    /* Leaflet popup readability */
+    .leaflet-popup-content-wrapper{
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+    }
+    .leaflet-popup-content{ margin: 12px 12px; }
+    .leaflet-tooltip{
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+      padding: 6px 10px;
+      font-weight: 900;
+      color: #0f172a;
+      background: #ffffff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">
+          <img id="cnrLogo" src="./CNR_Logo.png" alt="Center For Natural Resources logo" />
+        </div>
+        <div style="min-width:0">
+          <h1>Center For Natural Resources</h1>
+          <div class="brand-subtitle">Camera Monitor Dashboard • Live Status + Map Views</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" onclick="resetFilters()">Show All</button>
+        <button class="primary" onclick="downloadCSV()">⬇️ Download CSV</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat">
+        <div>
+          <div class="label">Total Cameras</div>
+          <p class="value" id="statTotal">0</p>
+        </div>
+        <div class="pill blue">T</div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="label">Online</div>
+          <p class="value" id="statOnline">0</p>
+        </div>
+        <div class="pill green">✓</div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="label">Offline</div>
+          <p class="value" id="statOffline">0</p>
+        </div>
+        <div class="pill red">!</div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="label">Cities</div>
+          <p class="value" id="statCities">0</p>
+        </div>
+        <div class="pill gray">🏙</div>
+      </div>
+    </section>
+
+    <main class="grid">
+      <section class="card" id="tableCard" aria-label="Camera table">
+        <div class="card-header">
+          <div>
+            <h2>Cameras</h2>
+            <div class="sub"></div>
+          </div>
+
+          <div class="table-controls">
+            <div class="search-wrap">
+              <span class="search-icon">🔎</span>
+              <input id="search" type="text" placeholder="Search cameras or cities..." />
+            </div>
+
+            <select id="orderBy" class="select" aria-label="Order table by">
+              <option value="camera_asc">Order by Camera Name (A→Z)</option>
+              <option value="city_asc">Order by City (A→Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <table id="table">
+            <thead>
+              <tr>
+                <th style="width: 44%;">Camera</th>
+                <th style="width: 22%;">City</th>
+                <th style="width: 18%;">Status</th>
+                <th style="width: 16%;">GIF</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div style="margin-top: 10px; color: var(--muted); font-size: 12px;">
+            Tip: Click a city bubble (City mode) or a camera bubble (Camera mode) to filter the table.
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="mapCard" aria-label="New Jersey map">
+        <div class="card-header">
+          <div class="map-header-left">
+            <h2>Map of New Jersey</h2>
+            <div id="mapSubtitle" class="sub">City bubbles show the number of cameras.</div>
+          </div>
+
+          <div class="map-controls">
+            <select id="mapMode" class="select" aria-label="Map filter mode">
+              <option value="city" selected>Filter by City</option>
+              <option value="camera">Filter by Camera</option>
+            </select>
+            <button class="ghost fit-btn" onclick="fitNJ()">Fit NJ</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div id="map"></div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <div id="gifModal" class="gif-modal" aria-hidden="true">
+    <div class="gif-modal__backdrop" onclick="closeGifModal()"></div>
+    <div class="gif-modal__card" role="dialog" aria-modal="true" aria-labelledby="gifModalTitle">
+      <div class="gif-modal__head">
+        <div class="gif-modal__titles">
+          <div id="gifModalTitle" class="gif-modal__title">Camera Preview</div>
+          <div id="gifModalMeta" class="gif-modal__meta"></div>
+        </div>
+        <button class="gif-modal__close" onclick="closeGifModal()" aria-label="Close">✕</button>
+      </div>
+      <div class="gif-modal__body">
+        <div id="gifModalContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== CONFIG ======
+    const CSV_FILE = "camera_status_final.csv"; // <-- set your final CSV filename here
+
+    // Keep these only for Fit NJ button (no clipping)
+    const NJ_SW = [38.85, -75.60];
+    const NJ_NE = [41.36, -73.80];
+
+    let data = [];
+    let map, markersLayer;
+    let cityIndex = new Map();
+    let currentCityFilter = "";
+    let mapMode = "city"; // "city" | "camera"
+
+    // Resolve logo path across environments where filename/history may differ.
+    (function resolveLogoPath(){
+      const img = document.getElementById("cnrLogo");
+      if (!img) return;
+
+      const candidates = ["./CNR_Logo.png", "./CNR Logo.png", "./CNR_Logo.PNG"];
+      let idx = 0;
+
+      img.onerror = () => {
+        idx += 1;
+        if (idx < candidates.length) {
+          img.src = candidates[idx];
+          return;
+        }
+        img.onerror = null;
+      };
+      img.src = candidates[idx];
+    })();
+
+    // ✅ Default table order: camera name decreasing (Z→A)
+    // When user selects dropdown: alphabetical ordering (A→Z)
+    let tableOrder = "camera_desc"; // "camera_desc" | "camera_asc" | "city_asc"
+
+    function normalizeStr(v){ return String(v ?? "").trim(); }
+    function cmpStr(a, b){
+      return normalizeStr(a).localeCompare(normalizeStr(b), undefined, { sensitivity: "base" });
+    }
+
+    function sortRows(rows){
+      const copy = [...rows];
+
+      if (tableOrder === "camera_desc") {
+        copy.sort((a, b) => cmpStr(b.camera_name, a.camera_name));
+        return copy;
+      }
+
+      if (tableOrder === "camera_asc") {
+        copy.sort((a, b) => cmpStr(a.camera_name, b.camera_name));
+        return copy;
+      }
+
+      // city_asc: City (A→Z), then Camera (A→Z)
+      copy.sort((a, b) => {
+        const c = cmpStr(a.city, b.city);
+        if (c !== 0) return c;
+        return cmpStr(a.camera_name, b.camera_name);
+      });
+      return copy;
+    }
+
+    fetch(CSV_FILE + "?nocache=" + new Date().getTime())
+      .then(res => res.text())
+      .then(text => {
+        data = parseCSV(text);
+
+        buildCityIndex(data);
+        updateStats(data);
+
+        // default render: camera desc (all cities together)
+        renderTable(data);
+
+        initMapIfNeeded();
+        bindMapModeUI();
+        bindOrderUI();
+        setMapMode("city");
+      })
+      .catch(err => console.error("CSV load error:", err));
+
+    function parseCSV(text) {
+      const rows = text.trim().split("\n");
+      const headers = rows[0].split(",").map(h => h.trim());
+      return rows.slice(1).map(row => {
+        const values = row.split(",");
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = (values[i] ?? "").trim());
+        return obj;
+      });
+    }
+
+    function updateStats(rows){
+      const total = rows.length;
+      const online = rows.filter(r => (r.status || "").toLowerCase().trim() === "online").length;
+      const offline = rows.filter(r => (r.status || "").toLowerCase().trim() === "offline").length;
+      const cities = new Set(rows.map(r => (r.city || "").trim()).filter(Boolean)).size;
+
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statOnline").textContent = online;
+      document.getElementById("statOffline").textContent = offline;
+      document.getElementById("statCities").textContent = cities;
+    }
+
+    function buildCityIndex(rows){
+      cityIndex = new Map();
+      for (const r of rows){
+        const city = (r.city || "").trim();
+        if (!city) continue;
+        if (!cityIndex.has(city)) cityIndex.set(city, []);
+        cityIndex.get(city).push(r);
+      }
+    }
+
+    function renderTable(rows) {
+      const sorted = sortRows(rows);
+      const tbody = document.querySelector("#table tbody");
+      tbody.innerHTML = sorted.map(row => `
+        <tr>
+          <td class="name">${escapeHtml(row.camera_name || "")}</td>
+          <td class="city">${escapeHtml(row.city || "")}</td>
+          <td>
+            <span class="badge ${(row.status || "").toLowerCase().trim() === 'online' ? 'online' : 'offline'}">
+              ${escapeHtml(row.status || "")}
+            </span>
+          </td>
+          <td>
+            <button class="view-btn" onclick="showGIF('${jsQuote(row.gif_path || "")}', '${jsQuote(row.camera_name || "")}', '${jsQuote(row.city || "")}', '${jsQuote(row.status || "")}')">
+              View
+            </button>
+          </td>
+        </tr>
+      `).join("");
+      
+      setTimeout(syncMapHeight, 50);
+    }
+
+    document.getElementById("search").addEventListener("input", function() {
+      const value = (this.value || "").toLowerCase().trim();
+      currentCityFilter = "";
+
+      if (!value){
+        renderTable(data);
+        return;
+      }
+
+      const filtered = data.filter(d =>
+        ((d.camera_name || "").toLowerCase().includes(value)) ||
+        ((d.city || "").toLowerCase().includes(value))
+      );
+
+      renderTable(filtered);
+    });
+
+    function bindOrderUI(){
+      const sel = document.getElementById("orderBy");
+      if (!sel) return;
+
+      sel.value = "camera_asc";
+
+      sel.addEventListener("change", (e) => {
+        const v = e.target.value;
+        tableOrder = (v === "city_asc") ? "city_asc" : "camera_asc";
+
+        const q = (document.getElementById("search").value || "").toLowerCase().trim();
+        if (!q) renderTable(data);
+        else {
+          const filtered = data.filter(d =>
+            ((d.camera_name || "").toLowerCase().includes(q)) ||
+            ((d.city || "").toLowerCase().includes(q))
+          );
+          renderTable(filtered);
+        }
+      });
+    }
+
+    function showGIF(path, cameraName = "", city = "", status = "") {
+      const fixedPath = encodeURI((path || "").trim());
+
+      const title = cameraName || "Camera Preview";
+      const metaParts = [];
+      if (city) metaParts.push(city);
+      if (status) metaParts.push(status);
+      const meta = metaParts.join(" • ");
+
+      document.getElementById("gifModalTitle").textContent = title;
+      document.getElementById("gifModalMeta").textContent = meta;
+
+      document.getElementById("gifModalContent").innerHTML = `<img src="${fixedPath}" alt="Camera preview GIF" />`;
+      openGifModal();
+    }
+
+    function openGifModal(){
+      const m = document.getElementById("gifModal");
+      m.classList.add("is-open");
+      m.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeGifModal(){
+      const m = document.getElementById("gifModal");
+      m.classList.remove("is-open");
+      m.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeGifModal();
+    });
+
+    function downloadCSV() {
+      const outHeaders = ["camera_name","status","gif_path","city","lat","lng","lat_cam","lng_cam"];
+      let csv = outHeaders.join(",") + "\n";
+      data.forEach(row => {
+        csv += outHeaders.map(h => (row[h] ?? "")).join(",") + "\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = CSV_FILE;
+      a.click();
+    }
+
+    function getNJBounds(){
+      return L.latLngBounds(NJ_SW, NJ_NE);
+    }
+
+    function initMapIfNeeded(){
+      if (typeof L === "undefined") { setTimeout(initMapIfNeeded, 50); return; }
+      if (map) return;
+
+      map = L.map("map", { zoomControl: true }).setView([40.0583, -74.4057], 8);
+
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+    }
+
+    function bindMapModeUI(){
+      const sel = document.getElementById("mapMode");
+      if (!sel) return;
+      sel.addEventListener("change", (e) => setMapMode(e.target.value));
+    }
+
+    function setMapMode(mode){
+      mapMode = (mode === "camera") ? "camera" : "city";
+
+      const subtitle = document.getElementById("mapSubtitle");
+      if (subtitle){
+        subtitle.textContent =
+          mapMode === "city"
+            ? "City bubbles show the number of cameras."
+            : "Camera bubbles show individual camera locations (green=online, red=offline).";
+      }
+
+      currentCityFilter = "";
+
+      if (mapMode === "city") renderCityMarkers();
+      else renderCameraMarkers();
+    }
+
+    function renderCityMarkers(){
+      initMapIfNeeded();
+      if (!markersLayer) return;
+
+      markersLayer.clearLayers();
+
+      for (const [city, cams] of cityIndex.entries()){
+        const center = cityCenter(cams);
+        if (!center) continue;
+
+        const count = cams.length;
+        const marker = L.marker(center, { icon: cityBubbleIcon(count) }).addTo(markersLayer);
+
+        marker.bindTooltip(`${city} (${count})`, { direction: "top", offset: [0, -10] });
+
+        marker.on("click", () => {
+          currentCityFilter = city;
+          document.getElementById("search").value = city;
+          renderTable(cams);
+          map.setView(center, 12);
+          marker.bindPopup(cityPopupHtml(city, cams)).openPopup();
+        });
+      }
+    }
+
+    function cityCenter(cams){
+      let sumLat = 0, sumLng = 0, n = 0;
+      for (const r of cams){
+        const lat = Number(r.lat);
+        const lng = Number(r.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        sumLat += lat; sumLng += lng; n++;
+      }
+      return n ? [sumLat / n, sumLng / n] : null;
+    }
+
+    function cityPopupHtml(city, cams){
+      const onlineCount = cams.filter(c => (c.status || "").toLowerCase().trim() === "online").length;
+      const offlineCount = cams.length - onlineCount;
+
+      return `
+        <div style="min-width: 240px;">
+          <div style="font-weight: 900; font-size: 14px; margin-bottom: 6px;">
+            ${escapeHtml(city)}
+          </div>
+          <div style="color:#64748b; font-size: 12px; margin-bottom: 10px;">
+            ${cams.length} cameras • <span style="color:#16a34a;font-weight:900;">${onlineCount} online</span> •
+            <span style="color:#dc2626;font-weight:900;">${offlineCount} offline</span>
+          </div>
+          <button class="view-btn" style="width:100%;" onclick="renderTable(window.__getCity('${jsQuote(city)}'))">
+            Show cameras in table
+          </button>
+        </div>
+      `;
+    }
+
+    window.__getCity = function(city){
+      return cityIndex.get(city) || [];
+    };
+
+    function cityBubbleIcon(count){
+      const size = count >= 10 ? 52 : (count >= 5 ? 46 : 40);
+      return L.divIcon({
+        className: "",
+        html: `
+          <div style="
+            width:${size}px;height:${size}px;
+            border-radius:999px;
+            display:grid;place-items:center;
+            background: rgba(37,99,235,0.92);
+            color:white;
+            border: 3px solid rgba(255,255,255,0.95);
+            box-shadow: 0 14px 28px rgba(37,99,235,0.22);
+            font-weight: 900;
+            font-size: 13px;
+          ">${count}</div>
+        `,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+    }
+
+    function renderCameraMarkers(){
+      initMapIfNeeded();
+      if (!markersLayer) return;
+
+      markersLayer.clearLayers();
+
+      for (const cam of data){
+        const lat = Number(cam.lat_cam);
+        const lng = Number(cam.lng_cam);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        const status = (cam.status || "").toLowerCase().trim();
+        const marker = L.marker([lat, lng], { icon: cameraBubbleIcon(status) }).addTo(markersLayer);
+
+        const name = cam.camera_name || "Camera";
+        const city = cam.city || "";
+
+        marker.bindTooltip(`${name}${city ? " • " + city : ""}`, { direction: "top", offset: [0, -10] });
+
+        marker.on("click", () => {
+          document.getElementById("search").value = name;
+          renderTable([cam]);
+          marker.bindPopup(cameraPopupHtml(cam)).openPopup();
+          map.setView([lat, lng], Math.max(map.getZoom(), 13));
+        });
+      }
+    }
+
+    function cameraPopupHtml(cam){
+      const name = escapeHtml(cam.camera_name || "Camera");
+      const city = escapeHtml(cam.city || "");
+      const status = escapeHtml(cam.status || "");
+      const gif = jsQuote(cam.gif_path || "");
+      return `
+        <div style="min-width: 240px;">
+          <div style="font-weight: 900; font-size: 14px; margin-bottom: 6px;">${name}</div>
+          <div style="color:#64748b; font-size: 12px; margin-bottom: 10px;">
+            ${city ? city + " • " : ""}${status}
+          </div>
+          <button class="view-btn" style="width:100%;"
+            onclick="showGIF('${gif}', '${jsQuote(cam.camera_name || "")}', '${jsQuote(cam.city || "")}', '${jsQuote(cam.status || "")}')">
+            View GIF
+          </button>
+        </div>
+      `;
+    }
+
+    function cameraBubbleIcon(status){
+      const s = (status || "").toLowerCase().trim();
+      const isOnline = s === "online";
+      const bg = isOnline ? "rgba(22,163,74,0.92)" : "rgba(220,38,38,0.92)";
+      const size = 20;
+
+      return L.divIcon({
+        className: "",
+        html: `
+          <div style="
+            width:${size}px;height:${size}px;
+            border-radius:999px;
+            background:${bg};
+            border: 3px solid rgba(255,255,255,0.95);
+            box-shadow: 0 12px 22px rgba(15,23,42,0.18);
+          "></div>
+        `,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+    }
+
+    function fitNJ(){
+      if (!map) { initMapIfNeeded(); return; }
+      map.fitBounds(getNJBounds());
+    }
+
+    function resetFilters(){
+      currentCityFilter = "";
+      document.getElementById("search").value = "";
+
+      tableOrder = "camera_desc";
+
+      const orderSel = document.getElementById("orderBy");
+      if (orderSel) orderSel.value = "camera_asc";
+
+      renderTable(data);
+      fitNJ();
+
+      if (mapMode === "city") renderCityMarkers();
+      else renderCameraMarkers();
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function jsQuote(str){
+      return String(str).replaceAll("\\","\\\\").replaceAll("'","\\'");
+    }
+
+    function syncMapHeight() {
+      const tableCard = document.getElementById("tableCard");
+      const mapCard = document.getElementById("mapCard");
+      if (!tableCard || !mapCard || data.length === 0) return;
+
+      // Reset explicit height on mobile so it collapses to the min-height gracefully
+      if (window.innerWidth <= 980) {
+        mapCard.style.height = "auto";
+        if (map) map.invalidateSize();
+        return;
+      }
+
+      const tbody = document.querySelector("#table tbody");
+      const currentRows = tbody.querySelectorAll("tr").length;
+      const tableHeight = tableCard.offsetHeight;
+      
+      // If we are looking at the whole dataset (Normal Mode), cut map size in half.
+      if (currentRows === data.length) {
+        mapCard.style.height = (tableHeight / 2) + "px";
+      } else {
+        // If the table is filtered and smaller, match its exact size.
+        mapCard.style.height = tableHeight + "px";
+      }
+      
+      if (map) {
+        map.invalidateSize();
+      }
+    }
+
+    window.addEventListener('resize', syncMapHeight);
+
+    setTimeout(() => fitNJ(), 800);
+  </script>
+</body>
+</html>
