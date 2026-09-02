@@ -1,0 +1,61 @@
+camera_name,status,gif_path,city,lat,lng,lat_cam,lng_cam
+Woodland Park 1 - McBrideAve,online,gifs/Woodland_Park_1-McBrideAve.gif,Woodland Park,40.8893,-74.1946,40.893597,-74.202344
+Woodland Park 2 - Lackawanna Ave,online,gifs/Woodland_Park_2_-Lackawanna_Ave.gif,Woodland Park,40.8893,-74.1946,40.888039,-74.207958
+Woodland Park 4 - Andrews Dr,online,gifs/Woodland_Park_4-Andrews_Dr.gif,Woodland Park,40.8893,-74.1946,40.887183,-74.214528
+Woodland Park 6 - Memorial Drive,online,gifs/Woodland_Park_6-Memorial_Drive.gif,Woodland Park,40.8893,-74.1946,40.892281,-74.209694
+Woodland Park 7 - Hromiak Terrace,online,gifs/Woodland_Park_7-Hromiak_Terrace.gif,Woodland Park,40.8893,-74.1946,40.890111,-74.206736
+Cedar Grove 2 - Community park,online,gifs/Cedar_Grove_2_-Community_park.gif,Cedar Grove,40.8579,-74.2296,40.861436,-74.226236
+Cedar Grove 3 - Peckmantown rd,online,gifs/Cedar_Grove_3-Peckmantown_rd.gif,Cedar Grove,40.8579,-74.2296,40.854572,-74.229431
+Cedar Grove 4 - 13 Commerce Rd,online,gifs/Cedar_Grove_4_-13_Commerce_Rd.gif,Cedar Grove,40.8579,-74.2296,40.864972,-74.224478
+Cedar Grove 5 - 525 Pompton Rd,online,gifs/Cedar_Grove_5-525_Pompton_Rd.gif,Cedar Grove,40.8579,-74.2296,40.851719,-74.228736
+Cedar Grove 6 - 90 Rugby Road,online,gifs/Cedar_Grove_6_-90_Rugby_Road.gif,Cedar Grove,40.8579,-74.2296,40.84935,-74.222947
+Scotch Plains 1 - TD Bank,online,gifs/Scotch_Plains1-TD_Bank.gif,Scotch Plains,40.6554,-74.3899,40.652886,-74.401258
+Scotch Plains 2 - Senger Pl,online,gifs/Scotch_Plains_2-_Senger_Pl.gif,Scotch Plains,40.6554,-74.3899,40.6501,-74.399272
+Scotch Plains 3 - East Second St,online,gifs/Scotch_Plains_3-East_Second_St.gif,Scotch Plains,40.6554,-74.3899,40.649633,-74.39665
+Little Falls 1 - LindsleyRd-CGRd,online,gifs/Little_Falls_1-LindsleyRd-CGRd.gif,Little Falls,40.8826,-74.2293,40.872125,-74.222283
+Little Falls 2 - E Main St,online,gifs/Little_Falls_2_-_E_Main_St.gif,Little Falls,40.8826,-74.2293,40.878019,-74.219467
+Little Falls 3 - DPW Yard,online,gifs/Little_Falls_3-DPW_Yard.gif,Little Falls,40.8826,-74.2293,40.884669,-74.218119
+Little Falls 4 - WilliamsStDairySt,online,gifs/Little_Falls4-WilliamsStDairySt.gif,Little Falls,40.8826,-74.2293,40.888675,-74.242211
+Westwood 1 - Westwood Plaza,online,gifs/Westwood_1_-_Westwood_Plaza.gif,Westwood,40.9918,-74.0324,40.997439,-74.040164
+Westwood 2 - Fairview Ave,online,gifs/Westwood_2_-_Fairview_Ave.gif,Westwood,40.9918,-74.0324,40.998861,-74.035444
+Westwood 3 - Brookside Park,online,gifs/Westwood_3_-_Brookside_Park.gif,Westwood,40.9918,-74.0324,40.998508,-74.030147
+Westwood 4 - Bridge By DPW,online,gifs/Westwood_4_-_Bridge_By_DPW.gif,Westwood,40.9918,-74.0324,40.992925,-74.020758
+Verona 1 - Sunset Ave,online,gifs/Verona_1_-_Sunset_Ave.gif,Verona,40.829,-74.2399,40.825511,-74.240106
+Verona 2 - Bloomfield Ave,online,gifs/Verona_2_-_Bloomfield_Ave.gif,Verona,40.829,-74.2399,40.831219,-74.244
+Verona 3 - Franklin St,online,gifs/Verona_3_-_Franklin_St.gif,Verona,40.829,-74.2399,40.836011,-74.242578
+Verona 4 - Ozone ave,online,gifs/Verona_4_-_Ozone_ave.gif,Verona,40.829,-74.2399,40.844939,-74.235189
+Paterson 1 - Presidential Blvd,online,gifs/Paterson_1_-_Presidential_Blvd.gif,Paterson,40.9168,-74.1718,40.924681,-74.16925
+Paterson 2 - 5th Ave and E 6th St,online,gifs/Paterson_2-5th_Ave_and_E_6th_St.gif,Paterson,40.9168,-74.1718,40.936122,-74.161739
+Paterson 3 - 11th Ave and East25th,online,gifs/Paterson3-11th_Ave_and_East25th.gif,Paterson,40.9168,-74.1718,40.921817,-74.148856
+Paterson 4 - Getty ave,online,gifs/Paterson_4-Getty_ave.gif,Paterson,40.9168,-74.1718,40.902769,-74.164011
+Leonia 1 - Broad St,online,gifs/Leonia_1_-_Broad_St.gif,Leonia,40.8617,-73.9879,40.864203,-73.986283
+Leonia 2 - Church Calvert,online,gifs/Leonia_2_-_Church_Calvert.gif,Leonia,40.8617,-73.9879,40.865008,-73.986897
+Leonia 3 - Broad Street East,online,gifs/Leonia_3_-_Broad_Street_East.gif,Leonia,40.8617,-73.9879,40.864186,-73.986039
+Englewood 1 - Hamilton Ave,online,gifs/Englewood_1_-_Hamilton_Ave.gif,Englewood,40.8945,-73.9749,40.902442,-73.972092
+Englewood 2 - Forest Ave,online,gifs/Englewood_2_-_Forest_Ave.gif,Englewood,40.8945,-73.9749,40.887942,-73.984992
+Englewood 3 - Wilbur Street,online,gifs/Englewood_3_-_Wilbur_Street.gif,Englewood,40.8945,-73.9749,40.895069,-73.985061
+Englewood 5 - Crystal Lake,online,gifs/Englewood_5_-_Crystal_Lake.gif,Englewood,40.8945,-73.9749,40.896939,-73.974433
+Rahway 1 - Jefferson Ave,online,gifs/Rahway_1_-_Jefferson_Ave.gif,Rahway,40.6082,-74.2776,40.608358,-74.290656
+Rahway 2 - Minor bridge,online,gifs/Rahway_2_-_Minor_bridge.gif,Rahway,40.6082,-74.2776,40.598872,-74.294653
+Rahway 3 - St George Ave,online,gifs/Rahway_3_-_St_George_Ave.gif,Rahway,40.6082,-74.2776,40.595214,-74.289797
+Rahway 4 - NB Ave and George Ave,online,gifs/Rahway_4-NB_Ave_and_George_Ave.gif,Rahway,40.6082,-74.2776,40.593653,-74.290706
+Rahway 5 - E Hazelwood Ave,online,gifs/Rahway_5_-_E_Hazelwood_Ave.gif,Rahway,40.6082,-74.2776,40.600203,-74.274386
+Plainfield 1 - East Front Street,online,gifs/Plainfield_1-East_Front_Street.gif,Plainfield,40.6337,-74.4074,40.639322,-74.408544
+Plainfield 2 - Netherwood Ave,online,gifs/Plainfield_2_-_Netherwood_Ave.gif,Plainfield,40.6337,-74.4074,40.634658,-74.412997
+Plainfield 3 - Watchung Ave,online,gifs/Plainfield_3_-_Watchung_Ave.gif,Plainfield,40.6337,-74.4074,40.618911,-74.419831
+Plainfield 4 - Stelle Ave,online,gifs/Plainfield_4_-_Stelle_Ave.gif,Plainfield,40.6337,-74.4074,40.608708,-74.413053
+Plainfield 5 - Leland Ave,online,gifs/Plainfield_5_-_Leland_Ave.gif,Plainfield,40.6337,-74.4074,40.637158,-74.414161
+Plainfield 6 - Milton Park,online,gifs/Plainfield_6_-_Milton_Park.gif,Plainfield,40.6337,-74.4074,40.636,-74.403447
+Totowa 1 - Lincoln Ave and Union,online,gifs/Totowa_1-Lincoln_Ave_and_Union.gif,Totowa,40.8951,-74.2242,40.908653,-74.204147
+Totowa 2 - Jefferson Pl,online,gifs/Totowa_2_-_Jefferson_Pl.gif,Totowa,40.8951,-74.2242,40.907353,-74.205203
+Totowa 3 - Riverside Dr,online,gifs/Totowa_3_-_Riverside_Dr.gif,Totowa,40.8951,-74.2242,40.888417,-74.222778
+Totowa 4 - Riverside Dr Riverview,online,gifs/Totowa_4-Riverside_Dr_Riverview.gif,Totowa,40.8951,-74.2242,40.890858,-74.220192
+Totowa 5 - Vreeland Ave,online,gifs/Totowa_5-Vreeland_Ave.gif,Totowa,40.8951,-74.2242,40.902389,-74.237389
+Dover 1 - Blackwell St,online,gifs/Dover_1_-_Blackwell_St.gif,Dover,40.8879,-74.5561,40.885431,-74.546858
+Dover 2 - Princeton Ave,online,gifs/Dover_2_-_Princeton_Ave.gif,Dover,40.8879,-74.5561,40.889247,-74.570006
+Dover 3 - Morris Street,online,gifs/Dover_3_-_Morris_Street.gif,Dover,40.8879,-74.5561,40.885072,-74.5575
+Ridgewood 1 - Irving Street,online,gifs/Ridgewood_1_-_Irving_Street.gif,Ridgewood,40.981700,-74.116300,40.978108,-74.108528
+Ridgewood 2 - Ridgewood Ave,online,gifs/Ridgewood_2_-_Ridgewood_Ave.gif,Ridgewood,40.981700,-74.116300,40.977361,-74.108208
+Ridgewood 3 - Graydon Park,online,gifs/Ridgewood_3_-_Graydon_Park.gif,Ridgewood,40.981700,-74.116300,40.985581,-74.111150
+Ridgewood 4 - Irving St Bridge,online,gifs/Ridgewood_4-Irving_St_Bridge.gif,Ridgewood,40.981700,-74.116300,40.980522,-74.107436
+Ridgewood 5 - Kingsbridge,online,gifs/Ridgewood_5_-_Kingsbridge.gif,Ridgewood,40.981700,-74.116300,40.987558,-74.088300
