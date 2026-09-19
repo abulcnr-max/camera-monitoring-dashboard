@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Center For Natural Resources - Camera Monitor Dashboard</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e5e7eb;
+
+      --blue: #2563eb;
+      --blue-2: #1d4ed8;
+
+      --green: #16a34a;
+      --red: #dc2626;
+
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    /* ✅ watermark background (visible, behind content) */
+    body{
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 600px at 20% 0%, #eaf2ff, transparent 60%),
+                  radial-gradient(1000px 600px at 90% 20%, #eefbf3, transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      padding: 22px 16px 40px;
+      position: relative;
+    }
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: url("CNR_Logo.png") center / min(900px, 70vw) no-repeat;
+      opacity: 0.12; /* tweak 0.10–0.18 */
+      pointer-events: none;
+      z-index: 0;
+      filter: grayscale(15%) saturate(0.9);
+    }
+    .container{
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+      position: relative;
+      z-index: 1; /* ensure content is above watermark */
+    }
+
+    /* Header */
+    .topbar{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand{ display: flex; align-items: center; gap: 16px; min-width: 0; }
+
+    /* ✅ logo becomes image */
+    .logo{
+      width: 72px; height: 72px; border-radius: 16px;
+      display: grid; place-items: center;
+      background: #fff;
+      border: 1px solid rgba(15,23,42,0.08);
+      box-shadow: 0 10px 25px rgba(15,23,42,0.10);
+      flex: 0 0 auto;
+      overflow: hidden;
+      padding: 4px;
+    }
+    .logo img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .brand h1{
+      margin: 0; font-size: 24px; letter-spacing: 0.2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ✅ header subtitle */
+    .brand-subtitle{
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .actions{ display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+
+    /* Inputs */
+    .search-wrap{ position: relative; width: min(520px, 100%); }
+    #search{
+      width: 100%;
+      padding: 11px 12px 11px 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fbfdff;
+      outline: none;
+      transition: 140ms ease;
+      font-size: 14px;
+    }
+    #search:focus{
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+    .search-icon{
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.55; pointer-events: none;
+      display: flex; align-items: center;
+    }
+
+    /* Buttons */
+    button{
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: 140ms ease;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+      white-space: nowrap;
+    }
+    button:hover{ transform: translateY(-1px); box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08); }
+    .primary{ background: var(--blue); border-color: rgba(37, 99, 235, 0.35); color: white; }
+    .primary:hover{ background: var(--blue-2); }
+    .ghost{ background: #f8fafc; }
+
+    /* Dropdown */
+    .select{
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: 140ms ease;
+      font-weight: 800;
+      font-size: 13px;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+      outline: none;
+      white-space: nowrap;
+    }
+    .select:focus{
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    /* Map header controls: keep dropdown + Fit NJ on one line */
+    .map-controls{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .map-controls .select{
+      flex: 1 1 220px;
+      min-width: 180px;
+      max-width: 320px;
+    }
+    .fit-btn{
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    /* Table header controls (Search + Order) */
+    .table-controls{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+    @media (max-width: 560px){
+      .table-controls{
+        flex-wrap: wrap;
+        white-space: normal;
+      }
+    }
+    .table-controls .select{
+      min-width: 220px;
+      max-width: 280px;
+      flex: 0 0 auto;
+    }
+    .table-controls .search-wrap{
+      max-width: 340px;
+      flex: 1 1 340px;
+    }
+
+    /* ensure map header left text can shrink */
+    .map-header-left{
+      min-width: 0;
+      overflow: hidden;
+    }
+    .map-header-left h2,
+    .map-header-left .sub{
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Stats row */
+    .stats{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 980px){ .stats{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px){ .stats{ grid-template-columns: 1fr; } }
+    .stat{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat .label{ color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .stat .value{ font-size: 22px; font-weight: 900; letter-spacing: 0.2px; margin: 0; }
+    .pill{
+      width: 34px; height: 34px; border-radius: 999px;
+      display: grid; place-items: center;
+      font-weight: 900; color: white;
+    }
+    .pill.green{ background: rgba(22,163,74,0.9); }
+    .pill.red{ background: rgba(220,38,38,0.9); }
+    .pill.blue{ background: rgba(37,99,235,0.9); }
+    .pill.gray{ background: rgba(100,116,139,0.9); }
+
+    /* Grid main */
+    .grid{ display: grid; grid-template-columns: 1.05fr 1.25fr; gap: 12px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 560px;
+    }
+    #mapCard{
+      align-self: start;
+    }
+    .card-header{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card-header h2{ margin: 0; font-size: 14px; letter-spacing: 0.2px; }
+    .card-header .sub{ margin-top: 2px; font-size: 12px; color: var(--muted); }
+    .card-body{ padding: 12px 14px 14px; flex: 1; }
+
+    /* Table */
+    table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    tbody td{
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      font-size: 13px;
+    }
+    tbody tr:hover{ background: #f8fafc; }
+    tbody tr:last-child td{ border-bottom: none; }
+    .name{ font-weight: 900; }
+    .city{ color: var(--muted); font-weight: 700; }
+
+    /* City group header row */
+    tr.city-row{ cursor: pointer; background: #f8fafc; }
+    tr.city-row:hover{ background: #f1f5f9; }
+    tr.city-row td{ padding: 12px 10px; }
+    .city-row-inner{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .city-row-left{ display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .chevron{
+      display: inline-grid;
+      place-items: center;
+      width: 18px; height: 18px;
+      flex: 0 0 auto;
+      font-size: 12px;
+      color: var(--muted);
+      transition: transform 140ms ease;
+    }
+    .city-row.is-expanded .chevron{ transform: rotate(90deg); }
+    .city-row-name{ font-weight: 900; font-size: 14px; }
+    .city-row-count{ color: var(--muted); font-weight: 700; font-size: 12px; }
+    .city-row-summary{ display: flex; align-items: center; gap: 10px; font-size: 12px; flex: 0 0 auto; }
+    .city-row-summary .online{ font-weight: 900; }
+    .city-row-summary .offline{ font-weight: 900; }
+    tr.camera-row td.name{ padding-left: 30px; }
+
+    .badge{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+    .badge::before{
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .online{ color: var(--green); }
+    .online::before{ background: var(--green); }
+    .offline{ color: var(--red); }
+    .offline::before{ background: var(--red); }
+
+    .view-btn{
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(37,99,235,0.25);
+      background: rgba(37,99,235,0.06);
+      color: var(--blue);
+      font-weight: 900;
+      box-shadow: none;
+      white-space: nowrap;
+    }
+    .view-btn:hover{ background: rgba(37,99,235,0.10); transform: translateY(-1px); }
+
+    /* Map */
+    #map{
+      width: 100%;
+      height: 100%;
+      min-height: 510px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* GIF Modal */
+    .gif-modal{ position: fixed; inset: 0; display: none; z-index: 9999; }
+    .gif-modal.is-open{ display:block; }
+    .gif-modal__backdrop{ position:absolute; inset:0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); }
+    .gif-modal__card{ position:relative; width: min(980px, calc(100% - 28px)); margin: 26px auto; background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 22px 70px rgba(15,23,42,0.22); overflow:hidden; }
+    .gif-modal__head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .gif-modal__titles{ min-width:0; }
+    .gif-modal__title{ font-weight: 900; font-size: 14px; color: var(--text); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .gif-modal__meta{ margin-top: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .gif-modal__close{ border: 1px solid var(--border); background:#fff; border-radius: 10px; padding: 8px 10px; cursor:pointer; font-weight: 900; }
+    .gif-modal__close:hover{ transform: translateY(-1px); }
+    .gif-modal__body{ padding: 12px 14px 14px; }
+    .gif-modal__body img{ width:100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 12px 28px rgba(15,23,42,0.12); background:#fff; }
+
+    /* Leaflet popup readability */
+    .leaflet-popup-content-wrapper{
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+    }
+    .leaflet-popup-content{ margin: 12px 12px; }
+    .leaflet-tooltip{
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+      padding: 6px 10px;
+      font-weight: 900;
+      color: #0f172a;
+      background: #ffffff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">
+          <img id="cnrLogo" src="./CNR_Logo.png" alt="Center For Natural Resources logo" />
+        </div>
+        <div style="min-width:0">
+          <h1>Center For Natural Resources</h1>
+          <div class="brand-subtitle">Camera Monitor Dashboard • Live Status + Map Views</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" onclick="resetFilters()">Show All</button>
+        <button class="primary" onclick="downloadCSV()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 21h14"/></svg>Download CSV
+        </button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat">
+        <div>
+          <div class="label">Total Cameras</div>
+          <p class="value" id="statTotal">0</p>
+        </div>
+        <div class="pill blue">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="label">Online</div>
+          <p class="value" id="statOnline">0</p>
+        </div>
+        <div class="pill green">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="label">Offline</div>
+          <p class="value" id="statOffline">0</p>
+        </div>
+        <div class="pill red">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="label">Cities</div>
+          <p class="value" id="statCities">0</p>
+        </div>
+        <div class="pill gray">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <main class="grid">
+      <section class="card" id="tableCard" aria-label="Camera table">
+        <div class="card-header">
+          <div>
+            <button id="backBtn" class="ghost" style="display:none; margin-bottom:8px; padding:6px 10px;" onclick="exitDrillDown()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><polyline points="15 18 9 12 15 6"/></svg>Back
+            </button>
+            <h2 id="cameraListTitle">Cameras</h2>
+            <div class="sub"></div>
+          </div>
+
+          <div class="table-controls">
+            <div class="search-wrap">
+              <span class="search-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input id="search" type="text" placeholder="Search cameras or cities..." />
+            </div>
+
+            <select id="orderBy" class="select" aria-label="Order cameras within each city">
+              <option value="camera_asc">Cameras A→Z within each city</option>
+              <option value="camera_desc">Cameras Z→A within each city</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <table id="table">
+            <tbody></tbody>
+          </table>
+
+          <div style="margin-top: 10px; color: var(--muted); font-size: 12px;">
+            Tip: Click a city to expand its cameras (and zoom the map to it). Expand multiple cities to zoom out and fit them all.
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="mapCard" aria-label="New Jersey map">
+        <div class="card-header">
+          <div class="map-header-left">
+            <h2>Map of New Jersey</h2>
+            <div id="mapSubtitle" class="sub">City bubbles show the number of cameras.</div>
+          </div>
+
+          <div class="map-controls">
+            <select id="mapMode" class="select" aria-label="Map filter mode">
+              <option value="city" selected>Filter by City</option>
+              <option value="camera">Filter by Camera</option>
+            </select>
+            <button class="ghost fit-btn" onclick="fitNJ()">Fit NJ</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div id="map"></div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <div id="gifModal" class="gif-modal" aria-hidden="true">
+    <div class="gif-modal__backdrop" onclick="closeGifModal()"></div>
+    <div class="gif-modal__card" role="dialog" aria-modal="true" aria-labelledby="gifModalTitle">
+      <div class="gif-modal__head">
+        <div class="gif-modal__titles">
+          <div id="gifModalTitle" class="gif-modal__title">Camera Preview</div>
+          <div id="gifModalMeta" class="gif-modal__meta"></div>
+        </div>
+        <button class="gif-modal__close" onclick="closeGifModal()" aria-label="Close">✕</button>
+      </div>
+      <div class="gif-modal__body">
+        <div id="gifModalContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== CONFIG ======
+    const CSV_FILE = "camera_status_final.csv"; // <-- set your final CSV filename here
+
+    // Keep these only for Fit NJ button (no clipping)
+    const NJ_SW = [38.85, -75.60];
+    const NJ_NE = [41.36, -73.80];
+
+    let data = [];
+    let map, markersLayer;
+    let cityIndex = new Map();
+    let currentCityFilter = "";
+    let mapMode = "city"; // "city" | "camera"
+
+    // Cities the table currently shows expanded (camera rows visible under them).
+    let expandedCities = new Set();
+
+    // The one city currently "drilled into" (individual camera pins on the
+    // map, flat camera-only list, Back button visible) — or null.
+    let drilledCity = null;
+    let cityMarkers = new Map(); // city name -> its bubble marker (only non-drilled cities)
+
+    // Resolve logo path across environments where filename/history may differ.
+    (function resolveLogoPath(){
+      const img = document.getElementById("cnrLogo");
+      if (!img) return;
+
+      const candidates = ["./CNR_Logo.png", "./CNR Logo.png", "./CNR_Logo.PNG"];
+      let idx = 0;
+
+      img.onerror = () => {
+        idx += 1;
+        if (idx < candidates.length) {
+          img.src = candidates[idx];
+          return;
+        }
+        img.onerror = null;
+      };
+      img.src = candidates[idx];
+    })();
+
+    // Cities are always grouped alphabetically. This only controls the order
+    // of the cameras listed within each city group.
+    let tableOrder = "camera_asc"; // "camera_asc" | "camera_desc"
+
+    function normalizeStr(v){ return String(v ?? "").trim(); }
+    function cmpStr(a, b){
+      return normalizeStr(a).localeCompare(normalizeStr(b), undefined, { sensitivity: "base", numeric: true });
+    }
+
+    function sortCamerasWithinGroup(rows){
+      const copy = [...rows];
+      copy.sort((a, b) => tableOrder === "camera_desc"
+        ? cmpStr(b.camera_name, a.camera_name)
+        : cmpStr(a.camera_name, b.camera_name));
+      return copy;
+    }
+
+    function groupByCity(rows){
+      const groups = new Map();
+      for (const r of rows){
+        const city = (r.city || "").trim() || "Unknown";
+        if (!groups.has(city)) groups.set(city, []);
+        groups.get(city).push(r);
+      }
+      return groups;
+    }
+
+    function filterData(query){
+      const q = (query || "").toLowerCase().trim();
+      if (!q) return data;
+      return data.filter(d =>
+        ((d.camera_name || "").toLowerCase().includes(q)) ||
+        ((d.city || "").toLowerCase().includes(q))
+      );
+    }
+
+    // Re-render whatever the table should currently show (respecting the
+    // active search box), using the latest expandedCities / tableOrder state.
+    function rerenderCurrent(){
+      const q = (document.getElementById("search").value || "").trim();
+      if (q) renderTable(filterData(q), true);
+      else renderTable(data, false);
+    }
+
+    fetch(CSV_FILE + "?nocache=" + new Date().getTime())
+      .then(res => res.text())
+      .then(text => {
+        data = parseCSV(text);
+
+        buildCityIndex(data);
+        updateStats(data);
+
+        // default render: camera name A->Z (matches the order dropdown)
+        renderTable(data);
+
+        initMapIfNeeded();
+        bindMapModeUI();
+        bindOrderUI();
+        setMapMode("city");
+      })
+      .catch(err => console.error("CSV load error:", err));
+
+    function parseCSV(text) {
+      const rows = text.trim().split("\n");
+      const headers = rows[0].split(",").map(h => h.trim());
+      return rows.slice(1).map(row => {
+        const values = row.split(",");
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = (values[i] ?? "").trim());
+        return obj;
+      });
+    }
+
+    function updateStats(rows){
+      const total = rows.length;
+      const online = rows.filter(r => (r.status || "").toLowerCase().trim() === "online").length;
+      const offline = rows.filter(r => (r.status || "").toLowerCase().trim() === "offline").length;
+      const cities = new Set(rows.map(r => (r.city || "").trim()).filter(Boolean)).size;
+
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statOnline").textContent = online;
+      document.getElementById("statOffline").textContent = offline;
+      document.getElementById("statCities").textContent = cities;
+    }
+
+    function buildCityIndex(rows){
+      cityIndex = new Map();
+      for (const r of rows){
+        const city = (r.city || "").trim();
+        if (!city) continue;
+        if (!cityIndex.has(city)) cityIndex.set(city, []);
+        cityIndex.get(city).push(r);
+      }
+    }
+
+    function cameraRowHtml(row){
+      return `
+        <tr class="camera-row">
+          <td class="name">${escapeHtml(row.camera_name || "")}</td>
+          <td class="city">${escapeHtml(row.city || "")}</td>
+          <td>
+            <span class="badge ${(row.status || "").toLowerCase().trim() === 'online' ? 'online' : 'offline'}">
+              ${escapeHtml(row.status || "")}
+            </span>
+          </td>
+          <td>
+            <button class="view-btn" onclick="event.stopPropagation(); showGIF('${jsQuote(row.gif_path || "")}', '${jsQuote(row.camera_name || "")}', '${jsQuote(row.city || "")}', '${jsQuote(row.status || "")}')">
+              View
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function setListHeader(title, showBack){
+      const titleEl = document.getElementById("cameraListTitle");
+      if (titleEl) titleEl.textContent = title;
+      const backBtn = document.getElementById("backBtn");
+      if (backBtn) backBtn.style.display = showBack ? "inline-flex" : "none";
+    }
+
+    // Renders `rows` grouped by city, alphabetically. Each city is a
+    // collapsible header row; its cameras render underneath only when that
+    // city is in `expandedCities` (or forceExpandAll is true, used for
+    // search results and single-camera map clicks so results are never
+    // hidden behind a collapsed header).
+    function renderTable(rows, forceExpandAll = false) {
+      setListHeader("Cameras", false);
+
+      const groups = groupByCity(rows);
+      const cities = Array.from(groups.keys()).sort(cmpStr);
+
+      const tbody = document.querySelector("#table tbody");
+      tbody.innerHTML = cities.map(city => {
+        const cams = sortCamerasWithinGroup(groups.get(city));
+        const expanded = forceExpandAll || expandedCities.has(city);
+        const onlineCount = cams.filter(c => (c.status || "").toLowerCase().trim() === "online").length;
+        const offlineCount = cams.length - onlineCount;
+
+        const headerRow = `
+          <tr class="city-row${expanded ? ' is-expanded' : ''}" data-city="${escapeHtml(city)}" onclick="toggleCity('${jsQuote(city)}')">
+            <td colspan="4">
+              <div class="city-row-inner">
+                <div class="city-row-left">
+                  <span class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></span>
+                  <span class="city-row-name">${escapeHtml(city)}</span>
+                  <span class="city-row-count">(${cams.length} camera${cams.length === 1 ? '' : 's'})</span>
+                </div>
+                <div class="city-row-summary">
+                  <span class="online">${onlineCount} online</span>
+                  <span class="offline">${offlineCount} offline</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        const camRows = expanded ? cams.map(cameraRowHtml).join("") : "";
+
+        return headerRow + camRows;
+      }).join("");
+
+      setTimeout(syncMapHeight, 50);
+    }
+
+    // Flat, single-city view: only that city's cameras, no group header.
+    // Shown while `drilledCity` is set (map showing its individual pins).
+    function renderDrilldownList(){
+      const city = drilledCity;
+      setListHeader(city, true);
+
+      const q = (document.getElementById("search").value || "").toLowerCase().trim();
+      let cams = cityIndex.get(city) || [];
+      if (q) {
+        cams = cams.filter(c =>
+          (c.camera_name || "").toLowerCase().includes(q) ||
+          (c.city || "").toLowerCase().includes(q)
+        );
+      }
+      cams = sortCamerasWithinGroup(cams);
+
+      const tbody = document.querySelector("#table tbody");
+      tbody.innerHTML = cams.map(cameraRowHtml).join("");
+
+      setTimeout(syncMapHeight, 50);
+    }
+
+    // Re-render whichever list mode is currently active (drilled into one
+    // city, or the normal all-cities grouped view), respecting the search box.
+    function refreshList(){
+      if (drilledCity) renderDrilldownList();
+      else rerenderCurrent();
+    }
+
+    // Expand/collapse one city's cameras in the table, and zoom the map to
+    // whatever set of cities is now expanded.
+    function toggleCity(city){
+      if (expandedCities.has(city)) expandedCities.delete(city);
+      else expandedCities.add(city);
+
+      rerenderCurrent();
+      updateMapForExpandedCities();
+    }
+
+    document.getElementById("search").addEventListener("input", function() {
+      currentCityFilter = "";
+      if (drilledCity) { renderDrilldownList(); return; }
+      const value = (this.value || "").trim();
+      renderTable(value ? filterData(value) : data, !!value);
+    });
+
+    function bindOrderUI(){
+      const sel = document.getElementById("orderBy");
+      if (!sel) return;
+
+      sel.value = "camera_asc";
+
+      sel.addEventListener("change", (e) => {
+        tableOrder = (e.target.value === "camera_desc") ? "camera_desc" : "camera_asc";
+        refreshList();
+      });
+    }
+
+    function showGIF(path, cameraName = "", city = "", status = "") {
+      const fixedPath = encodeURI((path || "").trim());
+
+      const title = cameraName || "Camera Preview";
+      const metaParts = [];
+      if (city) metaParts.push(city);
+      if (status) metaParts.push(status);
+      const meta = metaParts.join(" • ");
+
+      document.getElementById("gifModalTitle").textContent = title;
+      document.getElementById("gifModalMeta").textContent = meta;
+
+      document.getElementById("gifModalContent").innerHTML = `<img src="${fixedPath}" alt="Camera preview GIF" />`;
+      openGifModal();
+    }
+
+    function openGifModal(){
+      const m = document.getElementById("gifModal");
+      m.classList.add("is-open");
+      m.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeGifModal(){
+      const m = document.getElementById("gifModal");
+      m.classList.remove("is-open");
+      m.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeGifModal();
+    });
+
+    function downloadCSV() {
+      const outHeaders = ["camera_name","status","gif_path","city","lat","lng","lat_cam","lng_cam"];
+      let csv = outHeaders.join(",") + "\n";
+      data.forEach(row => {
+        csv += outHeaders.map(h => (row[h] ?? "")).join(",") + "\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = CSV_FILE;
+      a.click();
+    }
+
+    function getNJBounds(){
+      return L.latLngBounds(NJ_SW, NJ_NE);
+    }
+
+    // Zoom the map to fit whichever cities are currently expanded in the
+    // table: one expanded city -> zoom to that city; multiple -> fit them all.
+    // None expanded -> zoom back out to the full NJ view.
+    function updateMapForExpandedCities(){
+      initMapIfNeeded();
+      if (!map) return;
+
+      if (expandedCities.size === 0){
+        fitNJ();
+        return;
+      }
+
+      const pts = [];
+      for (const city of expandedCities){
+        const cams = cityIndex.get(city) || [];
+        for (const c of cams){
+          const lat = Number(c.lat_cam || c.lat);
+          const lng = Number(c.lng_cam || c.lng);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) pts.push([lat, lng]);
+        }
+      }
+      if (pts.length === 0) return;
+
+      if (pts.length === 1) map.setView(pts[0], 14);
+      else map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 15 });
+    }
+
+    // Drill into one city: its bubble becomes individual camera pins, the
+    // list shows only its cameras (flat, with a Back button), and the map
+    // zooms to fit them. Only one city can be drilled into at a time.
+    function enterDrillDown(city){
+      drilledCity = city;
+      const search = document.getElementById("search");
+      if (search.value) search.value = "";
+
+      renderDrilldownList();
+      renderCityMarkers();
+
+      const cams = cityIndex.get(city) || [];
+      const pts = [];
+      for (const c of cams){
+        const lat = Number(c.lat_cam || c.lat);
+        const lng = Number(c.lng_cam || c.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) pts.push([lat, lng]);
+      }
+      if (pts.length === 1) map.setView(pts[0], 15);
+      else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 16 });
+    }
+
+    // Back button: return to the full all-cities view.
+    function exitDrillDown(){
+      if (!drilledCity) return;
+      drilledCity = null;
+      expandedCities.clear();
+      rerenderCurrent();
+      renderCityMarkers();
+      fitNJ();
+    }
+
+    function initMapIfNeeded(){
+      if (typeof L === "undefined") { setTimeout(initMapIfNeeded, 50); return; }
+      if (map) return;
+
+      map = L.map("map", { zoomControl: true }).setView([40.0583, -74.4057], 8);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        subdomains: "abc",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+    }
+
+    function bindMapModeUI(){
+      const sel = document.getElementById("mapMode");
+      if (!sel) return;
+      sel.addEventListener("change", (e) => setMapMode(e.target.value));
+    }
+
+    function setMapMode(mode){
+      mapMode = (mode === "camera") ? "camera" : "city";
+
+      const subtitle = document.getElementById("mapSubtitle");
+      if (subtitle){
+        subtitle.textContent =
+          mapMode === "city"
+            ? "City bubbles show the number of cameras."
+            : "Camera bubbles show individual camera locations (green=online, red=offline).";
+      }
+
+      currentCityFilter = "";
+
+      if (mapMode !== "city" && drilledCity) exitDrillDown();
+
+      if (mapMode === "city") renderCityMarkers();
+      else renderCameraMarkers();
+    }
+
+    // Renders one bubble per city, EXCEPT `drilledCity` (if set), which
+    // renders as individual camera pins instead. Clicking a bubble opens its
+    // popup and zooms to it; if a different city was drilled into, that one
+    // reverts back to a single bubble first.
+    function renderCityMarkers(){
+      initMapIfNeeded();
+      if (!markersLayer) return;
+
+      markersLayer.clearLayers();
+      cityMarkers = new Map();
+
+      for (const [city, cams] of cityIndex.entries()){
+        if (city === drilledCity){
+          renderCameraPins(cams);
+          continue;
+        }
+
+        const center = cityCenter(cams);
+        if (!center) continue;
+
+        const count = cams.length;
+        const marker = L.marker(center, { icon: cityBubbleIcon(count) }).addTo(markersLayer);
+        marker.bindTooltip(`${city} (${count})`, { direction: "top", offset: [0, -10] });
+        cityMarkers.set(city, marker);
+
+        marker.on("click", () => {
+          if (drilledCity && drilledCity !== city){
+            drilledCity = null;
+            expandedCities.clear();
+            rerenderCurrent();
+            renderCityMarkers();
+          }
+          const m = cityMarkers.get(city) || marker;
+          m.bindPopup(cityPopupHtml(city, cams)).openPopup();
+          map.setView(center, 12);
+        });
+      }
+    }
+
+    // Individual camera pins for the one drilled-into city, reusing the same
+    // marker style/popup as the global "Filter by Camera" map mode.
+    function renderCameraPins(cams){
+      for (const cam of cams){
+        const lat = Number(cam.lat_cam || cam.lat);
+        const lng = Number(cam.lng_cam || cam.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        const status = (cam.status || "").toLowerCase().trim();
+        const marker = L.marker([lat, lng], { icon: cameraBubbleIcon(status) }).addTo(markersLayer);
+        const name = cam.camera_name || "Camera";
+        marker.bindTooltip(name, { direction: "top", offset: [0, -10] });
+
+        marker.on("click", () => {
+          marker.bindPopup(cameraPopupHtml(cam)).openPopup();
+        });
+      }
+    }
+
+    function cityCenter(cams){
+      let sumLat = 0, sumLng = 0, n = 0;
+      for (const r of cams){
+        const lat = Number(r.lat);
+        const lng = Number(r.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        sumLat += lat; sumLng += lng; n++;
+      }
+      return n ? [sumLat / n, sumLng / n] : null;
+    }
+
+    function cityPopupHtml(city, cams){
+      const onlineCount = cams.filter(c => (c.status || "").toLowerCase().trim() === "online").length;
+      const offlineCount = cams.length - onlineCount;
+
+      return `
+        <div style="min-width: 240px;">
+          <div style="font-weight: 900; font-size: 14px; margin-bottom: 6px;">
+            ${escapeHtml(city)}
+          </div>
+          <div style="color:#64748b; font-size: 12px; margin-bottom: 10px;">
+            ${cams.length} cameras • <span style="color:#16a34a;font-weight:900;">${onlineCount} online</span> •
+            <span style="color:#dc2626;font-weight:900;">${offlineCount} offline</span>
+          </div>
+          <button class="view-btn" style="width:100%;" onclick="enterDrillDown('${jsQuote(city)}')">
+            Show cameras
+          </button>
+        </div>
+      `;
+    }
+
+    function cityBubbleIcon(count){
+      const size = count >= 10 ? 52 : (count >= 5 ? 46 : 40);
+      return L.divIcon({
+        className: "",
+        html: `
+          <div style="
+            width:${size}px;height:${size}px;
+            border-radius:999px;
+            display:grid;place-items:center;
+            background: rgba(37,99,235,0.92);
+            color:white;
+            border: 3px solid rgba(255,255,255,0.95);
+            box-shadow: 0 14px 28px rgba(37,99,235,0.22);
+            font-weight: 900;
+            font-size: 13px;
+          ">${count}</div>
+        `,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+    }
+
+    function renderCameraMarkers(){
+      initMapIfNeeded();
+      if (!markersLayer) return;
+
+      markersLayer.clearLayers();
+
+      for (const cam of data){
+        const lat = Number(cam.lat_cam);
+        const lng = Number(cam.lng_cam);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        const status = (cam.status || "").toLowerCase().trim();
+        const marker = L.marker([lat, lng], { icon: cameraBubbleIcon(status) }).addTo(markersLayer);
+
+        const name = cam.camera_name || "Camera";
+        const city = cam.city || "";
+
+        marker.bindTooltip(`${name}${city ? " • " + city : ""}`, { direction: "top", offset: [0, -10] });
+
+        marker.on("click", () => {
+          document.getElementById("search").value = name;
+          renderTable([cam], true);
+          marker.bindPopup(cameraPopupHtml(cam)).openPopup();
+          map.setView([lat, lng], Math.max(map.getZoom(), 13));
+        });
+      }
+    }
+
+    function cameraPopupHtml(cam){
+      const name = escapeHtml(cam.camera_name || "Camera");
+      const city = escapeHtml(cam.city || "");
+      const status = escapeHtml(cam.status || "");
+      const gif = jsQuote(cam.gif_path || "");
+      return `
+        <div style="min-width: 240px;">
+          <div style="font-weight: 900; font-size: 14px; margin-bottom: 6px;">${name}</div>
+          <div style="color:#64748b; font-size: 12px; margin-bottom: 10px;">
+            ${city ? city + " • " : ""}${status}
+          </div>
+          <button class="view-btn" style="width:100%;"
+            onclick="showGIF('${gif}', '${jsQuote(cam.camera_name || "")}', '${jsQuote(cam.city || "")}', '${jsQuote(cam.status || "")}')">
+            View GIF
+          </button>
+        </div>
+      `;
+    }
+
+    function cameraBubbleIcon(status){
+      const s = (status || "").toLowerCase().trim();
+      const isOnline = s === "online";
+      const bg = isOnline ? "rgba(22,163,74,0.92)" : "rgba(220,38,38,0.92)";
+      const size = 20;
+
+      return L.divIcon({
+        className: "",
+        html: `
+          <div style="
+            width:${size}px;height:${size}px;
+            border-radius:999px;
+            background:${bg};
+            border: 3px solid rgba(255,255,255,0.95);
+            box-shadow: 0 12px 22px rgba(15,23,42,0.18);
+          "></div>
+        `,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+    }
+
+    function fitNJ(){
+      if (!map) { initMapIfNeeded(); return; }
+      map.fitBounds(getNJBounds());
+    }
+
+    function resetFilters(){
+      currentCityFilter = "";
+      document.getElementById("search").value = "";
+      expandedCities.clear();
+      drilledCity = null;
+
+      tableOrder = "camera_asc";
+
+      const orderSel = document.getElementById("orderBy");
+      if (orderSel) orderSel.value = "camera_asc";
+
+      renderTable(data);
+      fitNJ();
+
+      if (mapMode === "city") renderCityMarkers();
+      else renderCameraMarkers();
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function jsQuote(str){
+      return String(str).replaceAll("\\","\\\\").replaceAll("'","\\'");
+    }
+
+    function syncMapHeight() {
+      const tableCard = document.getElementById("tableCard");
+      const mapCard = document.getElementById("mapCard");
+      if (!tableCard || !mapCard || data.length === 0) return;
+
+      // Reset explicit height on mobile so it collapses to the min-height gracefully
+      if (window.innerWidth <= 980) {
+        mapCard.style.height = "auto";
+        if (map) map.invalidateSize();
+        return;
+      }
+
+      const tbody = document.querySelector("#table tbody");
+      const currentRows = tbody.querySelectorAll("tr").length;
+      const tableHeight = tableCard.offsetHeight;
+      
+      // If we are looking at the whole dataset (Normal Mode), cut map size in half.
+      if (currentRows === data.length) {
+        mapCard.style.height = (tableHeight / 4) + "px";
+      } else {
+        // If the table is filtered and smaller, match its exact size.
+        mapCard.style.height = tableHeight + "px";
+      }
+      
+      if (map) {
+        map.invalidateSize();
+      }
+    }
+
+    window.addEventListener('resize', syncMapHeight);
+
+    setTimeout(() => fitNJ(), 800);
+  </script>
+</body>
+</html>
