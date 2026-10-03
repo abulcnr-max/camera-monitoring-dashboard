@@ -1,0 +1,12 @@
+@"
+# Ignore everything by default...
+*
+
+# ...except what the dashboard actually serves:
+!index.html
+!CNR_Logo.png
+!camera_status_final.csv
+!gifs/
+!gifs/**
+!.gitignore
+"@ | Out-File -Encoding utf8 .gitignore
